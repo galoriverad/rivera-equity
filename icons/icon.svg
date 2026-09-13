@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rivera Equity">
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="#0e1116"/>
+  <rect x="140" y="280" width="48" height="112" rx="8" fill="#14b8a6"/>
+  <rect x="208" y="220" width="48" height="172" rx="8" fill="#14b8a6"/>
+  <rect x="276" y="150" width="48" height="242" rx="8" fill="#2dd4bf"/>
+  <rect x="344" y="200" width="48" height="192" rx="8" fill="#14b8a6"/>
+  <circle cx="390" cy="110" r="22" fill="#3dd68c"/>
+</svg>

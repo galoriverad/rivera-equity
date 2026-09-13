@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0c0f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Equity Fund" />
+<base href="./" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+<title>Rivera's Equity Fund — Live</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root {
+  --bg:#0a0c0f; --surface:#12151a; --surface2:#1a1f27; --card:#14181f; --border:#2a3340;
+  --text:#e8edf4; --muted:#8b97a8; --accent:#14b8a6; --accent2:#3d9cf0;
+  --green:#3dd68c; --red:#f07178; --amber:#e6c07b; --purple:#a78bfa;
+  --r:12px; --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.45;min-height:100vh}
+a{color:var(--accent2)}
+.wrap{max-width:1280px;margin:0 auto;padding:22px 20px 64px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.brand-name{font-size:1.55rem;font-weight:700;letter-spacing:-.02em}
+.brand-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tomas-chip{font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.35);padding:3px 9px;border-radius:999px}
+.brand-sub{color:var(--muted);font-size:.85rem;margin-top:6px}
+.topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.live-badge{display:inline-flex;align-items:center;gap:7px;font-size:.75rem;font-weight:700;color:var(--green);background:rgba(61,214,140,.12);border:1px solid rgba(61,214,140,.28);padding:5px 11px;border-radius:999px}
+.live-badge.stale{color:var(--amber);background:rgba(230,192,123,.1);border-color:rgba(230,192,123,.3)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost{background:transparent}
+.btn-teal{background:var(--accent);border-color:var(--accent);color:#042f2e;font-weight:700}
+.btn-teal:hover{filter:brightness(1.08);color:#042f2e;border-color:var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.chip{padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer}
+.chip.active{background:rgba(20,184,166,.15);border-color:var(--accent);color:var(--accent)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.kpi-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.kpi-value{font-size:1.55rem;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi-sub{font-size:.78rem;color:var(--muted);margin-top:4px}
+.kpi-value.up{color:var(--green)}.kpi-value.dn{color:var(--red)}.kpi-value.warn{color:var(--amber)}
+.main-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.card h2{font-size:.95rem;font-weight:700;margin-bottom:4px}
+.card .hint{font-size:.78rem;color:var(--muted);margin-bottom:12px}
+.chartbox{height:280px;position:relative}
+.goal-bar{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;margin:12px 0 8px}
+.goal-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:6px;transition:width .5s}
+.goal-meta{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted)}
+.scenario{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.scenario-box{background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border)}
+.scenario-box .lab{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.scenario-box .val{font-size:1.05rem;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.section{margin-bottom:20px}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:.82rem;font-variant-numeric:tabular-nums}
+thead th{text-align:right;padding:10px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2);position:sticky;top:0}
+thead th:first-child,tbody td:first-child{text-align:left}
+tbody td{padding:11px 12px;border-bottom:1px solid var(--border);text-align:right}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody tr:last-child td{border-bottom:none}
+.name-cell{display:flex;flex-direction:column;gap:2px;min-width:180px}
+.name-cell .n{font-weight:600}.name-cell .t{font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+.pill{display:inline-block;padding:2px 7px;border-radius:5px;font-size:.68rem;font-weight:700;letter-spacing:.03em}
+.pill.live{background:rgba(61,214,140,.15);color:var(--green)}
+.pill.stale{background:rgba(230,192,123,.15);color:var(--amber)}
+.pill.manual{background:rgba(61,156,240,.15);color:var(--accent2)}
+.pill.cash{background:rgba(139,151,168,.15);color:var(--muted)}
+.pill.warn{background:rgba(240,113,120,.15);color:var(--red)}
+.up{color:var(--green)}.dn{color:var(--red)}
+.alert{background:rgba(230,192,123,.08);border:1px solid rgba(230,192,123,.35);color:var(--amber);padding:12px 14px;border-radius:10px;font-size:.82rem;margin-bottom:16px}
+.alert strong{color:var(--text)}
+.rec-list{display:grid;gap:12px}
+.rec-item{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:10px;padding:14px 16px}
+.rec-item.risk{border-left-color:var(--red)}
+.rec-item.opp{border-left-color:var(--green)}
+.rec-item.warn{border-left-color:var(--amber)}
+.rec-item h3{font-size:.88rem;margin-bottom:4px}
+.rec-item p{font-size:.82rem;color:var(--muted)}
+.tag{font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.tag.certain{background:rgba(61,214,140,.2);color:var(--green)}
+.tag.likely{background:rgba(61,156,240,.2);color:var(--accent2)}
+.tag.guess{background:rgba(139,151,168,.2);color:var(--muted)}
+.disclaimer{font-size:.75rem;color:var(--muted);margin-top:28px;padding:14px;border:1px dashed var(--border);border-radius:10px}
+.admin{margin-top:18px}
+.admin summary{cursor:pointer;color:var(--muted);font-size:.82rem;font-weight:600}
+.admin-body{margin-top:12px;display:grid;gap:8px}
+.admin-row{display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px;align-items:center}
+.admin-row input,.admin-row select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-family:inherit}
+.footer-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:10px}
+
+/* Portfolio Mix */
+.mix-section{margin-bottom:22px}
+.mix-head{font-size:.95rem;font-weight:700;margin-bottom:12px;letter-spacing:-.01em}
+.mix-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.mix-card{background:#0e1116;border:1px solid #252b36;border-radius:14px;padding:16px 14px;min-width:0;transition:border-color .25s,box-shadow .25s,background .25s}
+.mix-card.live-shares{position:relative}
+.mix-card.live-shares::after{content:'LIVE';position:absolute;top:10px;right:10px;font-size:.55rem;font-weight:800;letter-spacing:.08em;color:var(--green);background:rgba(61,214,140,.12);border:1px solid rgba(61,214,140,.35);padding:2px 6px;border-radius:999px}
+.mix-card.live-shares .mix-value{transition:color .2s}
+.mix-card.live-pulse{animation:livePulse 2.4s ease-in-out infinite}
+.mix-card.tick-up,.mix-card.live-shares.tick-up{animation:cardFlashUp .85s ease !important}
+.mix-card.tick-dn,.mix-card.live-shares.tick-dn{animation:cardFlashDn .85s ease !important}
+@keyframes cardFlashUp{0%{background:rgba(61,214,140,.28);border-color:rgba(61,214,140,.7);box-shadow:0 0 0 1px rgba(61,214,140,.35)}40%{background:rgba(61,214,140,.12)}100%{background:#0e1116;border-color:#252b36;box-shadow:none}}
+@keyframes cardFlashDn{0%{background:rgba(240,113,120,.28);border-color:rgba(240,113,120,.7);box-shadow:0 0 0 1px rgba(240,113,120,.35)}40%{background:rgba(240,113,120,.12)}100%{background:#0e1116;border-color:#252b36;box-shadow:none}}
+@keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(61,156,240,0)}50%{box-shadow:0 0 0 1px rgba(61,156,240,.35)}}
+.mix-value.tick-up{color:var(--green)!important}
+.mix-value.tick-dn{color:var(--red)!important}
+.mix-bot .mv.live-num{transition:color .2s}
+.mix-label{font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.mix-value{font-size:1.35rem;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-bottom:12px;white-space:nowrap}
+.mix-mid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #252b36}
+.mix-mid .ml{font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.mix-mid .mv{font-size:.95rem;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.mix-mid .mv.xirr{color:var(--green)}
+.mix-mid .mv.xirr.dn{color:var(--red)}
+.mix-note{font-size:.62rem;color:var(--muted);font-weight:500;margin-top:2px}
+.mix-bot{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.mix-bot .ml{font-size:.58rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.mix-bot .mv{font-size:.82rem;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+
+.vintage-card{margin-bottom:22px}
+.vintage-card h2{font-size:1rem;margin-bottom:4px}
+.vintage-foot{font-size:.72rem;color:var(--muted);margin-top:10px}
+.chartbox-vintage{height:320px;position:relative}
+
+@media (max-width:1100px){
+  .mix-row{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:960px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .main-grid{grid-template-columns:1fr}
+  .scenario{grid-template-columns:1fr}
+}
+@media (max-width:700px){
+  .mix-row{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .kpi-value{font-size:1.25rem}
+  .admin-row{grid-template-columns:1fr}
+  .mix-row{grid-template-columns:1fr}
+  .mix-value{font-size:1.2rem}
+}
+@media print{
+  .btn,.chips,.admin,.alert{display:none !important}
+  body{background:#fff;color:#000}
+}
+
+.auth-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.auth-email{font-size:.72rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.role-viewer .owner-only{display:none !important}
+
+/* Login overlay (GitHub Pages client auth) */
+#loginOverlay{
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(10,12,15,.92); backdrop-filter:blur(8px);
+  align-items:center; justify-content:center;
+  padding:24px 18px; padding-bottom:max(24px, env(safe-area-inset-bottom));
+}
+#loginOverlay.show{display:flex}
+#appRoot{display:none}
+#appRoot.authed{display:block}
+.login-card{
+  width:100%; max-width:400px; background:var(--surface);
+  border:1px solid var(--border); border-radius:16px; padding:28px 22px 24px;
+}
+.login-brand{font-size:1.35rem;font-weight:700;letter-spacing:-.02em}
+.login-sub{color:var(--muted);font-size:.85rem;margin:6px 0 18px;line-height:1.45}
+.login-hint{color:var(--muted);font-size:.8rem;margin:12px 0 0;line-height:1.45}
+.login-err{display:none;background:rgba(240,113,120,.1);border:1px solid rgba(240,113,120,.35);
+  color:var(--red);padding:10px 12px;border-radius:8px;font-size:.82rem;margin-bottom:12px}
+.login-err.show{display:block}
+#googleBtnWrap{display:flex;justify-content:center;min-height:44px;margin:8px 0 4px}
+.login-foot{margin-top:18px;font-size:.72rem;color:var(--muted);text-align:center;line-height:1.4}
+.members-note{
+  display:none; position:absolute; right:0; top:calc(100% + 6px); z-index:40;
+  width:min(280px, 80vw); background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px; font-size:.75rem; color:var(--muted); line-height:1.4;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.members-wrap{position:relative}
+
+</style>
+</head>
+<body>
+<div id="loginOverlay" class="show" aria-hidden="false">
+  <div class="login-card">
+    <div class="login-brand">Rivera's Equity Fund</div>
+    <div class="login-sub">Sign in with Google. Only Galo (owner) and Blair (viewer).</div>
+    <div class="login-err" id="loginErr" role="alert"></div>
+    <div id="googleBtnWrap"></div>
+    <p class="login-hint" id="allowedHint"></p>
+    <p class="login-foot">Static GitHub Pages build · session in this browser only · repo may be public</p>
+  </div>
+</div>
+<div id="appRoot">
+<div class="wrap">
+  <header class="topbar">
+    <div>
+      <div class="brand-row">
+        <div class="brand-name">Rivera's Equity Fund</div>
+        <span class="tomas-chip">Tomás</span>
+      </div>
+      <div class="brand-sub">Private · Updated daily</div>
+    </div>
+    <div class="topbar-actions">
+      <span class="live-badge" id="liveBadge"><span class="live-dot"></span> LIVE</span>
+      <span id="refreshTime" style="font-size:.78rem;color:var(--muted)">—</span>
+      <button class="btn" id="btnRefresh" type="button">Refresh quotes</button>
+      <button class="btn btn-teal" id="btnReport" type="button" title="Print / PDF summary">Report (PDF)</button>
+      <button class="btn btn-ghost owner-only" id="btnAdmin" type="button">Admin</button>
+      <span class="members-wrap owner-only">
+        <button class="btn btn-ghost" id="btnMembers" type="button">Members</button>
+        <div class="members-note" id="membersNote" role="status">Members only on private server — fixed Google allowlist on Pages.</div>
+      </span>
+      <span class="auth-email" id="authEmail"></span>
+      <button class="btn btn-ghost" id="btnLogout" type="button">Log out</button>
+    </div>
+  </header>
+
+  <!-- ===== TOP: Portfolio Mix (fund view) ===== -->
+  <section class="mix-section" id="portfolioMixSection">
+    <div class="mix-head">Portfolio mix</div>
+    <div class="mix-row" id="mixRow">
+      <!-- filled by JS -->
+    </div>
+  </section>
+
+  <section class="card vintage-card">
+    <h2>Capital Deployed vs Current Value by Vintage Year</h2>
+    <div class="hint" style="margin-bottom:8px">Each bar stacks Val LY + Cap In + Gain, adding up to that year's Val YE.</div>
+    <div class="chartbox-vintage"><canvas id="vintageChart"></canvas></div>
+    <div class="vintage-foot">[Guessing] illustrative vintage until transaction ledger wired · magnitudes seeded from fund view / Equity Fund YE series</div>
+  </section>
+
+  <div class="alert" id="qqqAlert">
+    <strong>Ticker unresolved — Credo Nasdaq line:</strong> “Invesco Nasdaq 100 ETF USD Inc” (376 u @ report $296.43) is <em>not</em> being priced with US-listed QQQ (~$715). Applying AMEX/NASDAQ QQQ would inflate the book by ~$157k. Held at <strong>stale Credo mark $296.43</strong> until Galo confirms ISIN / exact ticker (likely UCITS / London share class).
+  </div>
+
+  <div class="chips" id="viewChips">
+    <button class="chip active" data-view="total">Total</button>
+    <button class="chip" data-view="credo">RWM Credo</button>
+    <button class="chip" data-view="abi">ABI EquatePlus</button>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Total equity</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub" id="kpiTotalSub">vs cost basis</div></div>
+    <div class="kpi"><div class="kpi-label">Gap to $2M</div><div class="kpi-value warn" id="kpiGap">—</div><div class="kpi-sub" id="kpiGapSub">target ~13 Sep 2027</div></div>
+    <div class="kpi"><div class="kpi-label">Progress</div><div class="kpi-value" id="kpiProg">—</div><div class="kpi-sub" id="kpiProgSub">of $2,000,000</div></div>
+    <div class="kpi"><div class="kpi-label">Unrealised P&amp;L</div><div class="kpi-value" id="kpiPnl">—</div><div class="kpi-sub" id="kpiPnlSub">live + stale marks</div></div>
+  </div>
+
+  <div class="main-grid">
+    <div class="card">
+      <h2>Allocation</h2>
+      <div class="hint" id="allocHint">By market value · current view</div>
+      <div class="chartbox"><canvas id="allocChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>$2M goal · 12 months</h2>
+      <div class="hint">Target date ≈ 13 Sep 2027 · simple path math</div>
+      <div class="goal-bar"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
+      <div class="goal-meta"><span id="goalLeft">—</span><span id="goalRight">$2,000,000</span></div>
+      <div class="chartbox" style="height:140px;margin-top:8px"><canvas id="goalChart"></canvas></div>
+      <div class="scenario">
+        <div class="scenario-box"><div class="lab">If markets flat — monthly add</div><div class="val" id="scenMonthly">—</div></div>
+        <div class="scenario-box"><div class="lab">If no contributions — needed CAGR</div><div class="val" id="scenCagr">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="section-head">
+      <h2 style="font-size:1rem">Holdings</h2>
+      <span class="hint" id="holdingsHint" style="margin:0">Qty &amp; cost basis from Aug/Apr 2026 reports · Cash at Bank seeded from fund view</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Qty</th><th>Unit Cost</th><th>Live Price</th><th>Cost Basis</th>
+            <th>Market Value</th><th>Unreal. G/L $</th><th>G/L %</th><th>Weight</th><th>Source</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="abiSection">
+    <div class="section-head"><h2 style="font-size:1rem">ABI vesting schedule</h2><span class="hint" style="margin:0">EquatePlus CSV · quantities locked · total shares+RSUs 8,042</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Grant</th><th>Grant Date</th><th>Vest Date</th><th>Qty</th><th>Award USD</th><th>Notes</th></tr>
+        </thead>
+        <tbody id="vestBody"></tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>ABI options · underwater check</h2>
+      <div class="hint">Strikes in EUR · intrinsic uses live ABI.BR × EURUSD (or 0 if still OTM)</div>
+      <div class="table-wrap" style="border:none">
+        <table>
+          <thead><tr><th>Tranche</th><th>Qty</th><th>Strike (EUR)</th><th>Expiry</th><th>ABI.BR</th><th>Intrinsic /sh</th><th>Intrinsic USD</th><th>Status</th></tr></thead>
+          <tbody id="optBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2 style="font-size:1rem">Tomás Recommendations</h2><span class="hint" style="margin:0">Radical candor · tagged certainty</span></div>
+    <div class="rec-list" id="recList"></div>
+  </section>
+
+  <details class="admin card owner-only" id="adminPanel">
+    <summary>Admin · manual price / cash overrides (saved in localStorage)</summary>
+    <div class="admin-body" id="adminBody"></div>
+    <div class="footer-meta">
+      <span>Overrides apply only on this browser. Cash at Bank override = USD amount.</span>
+      <button class="btn" type="button" id="btnClearOverrides">Clear all overrides</button>
+    </div>
+  </details>
+
+  <p class="disclaimer">
+    <strong>Disclaimer:</strong> Not formal investment advice. For personal planning by the Rivera family only.
+    Public prices are delayed Yahoo chart quotes and may differ from broker fills. Private marks (SpaceX, Credo funds)
+    and the unresolved Nasdaq UCITS line are report/stale and unreliable for NAV certainty. Options intrinsic ignores
+    time value and FX hedging. Cash at Bank $140,000 is a manual/seed line from Rivera's Equity Fund view (2026-09).
+    Past performance ≠ future results. Tomás / Grok Bot build · Sep 2026.
+  </p>
+</div>
+</div><!-- #appRoot -->
+
+<script>
+/* ===== Seed data (authoritative qty / cost from reports) ===== */
+const GOAL = 2000000;
+const TARGET_DATE = new Date('2027-09-13T00:00:00Z');
+const XIRR_SEED = 9.0; // [report] seed from Rivera's Equity Fund view until real XIRR wired
+const ABI_SHARES_DISPLAY = 8042; // CSV total shares+RSUs (excl. 132.853 notional dividend RSUs in RSU line)
+const CASH_AT_BANK_DEFAULT = 140000; // manual/seed from Rivera's Equity Fund view 2026-09
+const BUILD_QUOTES = {"IVV": {"symbol": "IVV", "price": 767.92, "prevClose": 777.13, "currency": "USD", "exchange": "PCX"}, "QQQ": {"symbol": "QQQ", "price": 714.88, "prevClose": 717.67, "currency": "USD", "exchange": "NGM"}, "GOOGL": {"symbol": "GOOGL", "price": 338.5, "prevClose": 342.48, "currency": "USD", "exchange": "NMS"}, "TSLA": {"symbol": "TSLA", "price": 365.44, "prevClose": 376.37, "currency": "USD", "exchange": "NMS"}, "BUD": {"symbol": "BUD", "price": 78.23, "prevClose": 80.22, "currency": "USD", "exchange": "NYQ"}, "ABI.BR": {"symbol": "ABI.BR", "price": 67.18, "prevClose": 68.76, "currency": "EUR", "exchange": "BRU"}, "EURUSD=X": {"symbol": "EURUSD=X", "price": 1.1601, "prevClose": 1.1614, "currency": "USD", "exchange": "CCY"}};
+
+const HOLDINGS = [
+  {id:'ivv', book:'credo', name:'iShares Core S&P 500 ETF USD Inc', ticker:'IVV', qty:592, unitCost:422.29, costBasis:249994.18, reportPrice:775.50, yahoo:'IVV', public:true},
+  {id:'qqq', book:'credo', name:'Invesco Nasdaq 100 ETF USD Inc', ticker:'— (≠ US QQQ)', qty:376, unitCost:241.86, costBasis:90938.22, reportPrice:296.43, yahoo:null, public:false, unresolved:true, note:'Likely UCITS/London; NOT US QQQ ~$715'},
+  {id:'googl', book:'credo', name:'Alphabet Inc-Cl A', ticker:'GOOGL', qty:110, unitCost:141.07, costBasis:15517.59, reportPrice:341.24, yahoo:'GOOGL', public:true},
+  {id:'tsla', book:'credo', name:'Tesla Inc', ticker:'TSLA', qty:46, unitCost:261.57, costBasis:12032.23, reportPrice:352.88, yahoo:'TSLA', public:true},
+  {id:'spacex', book:'credo', name:'Space Exploration Techn-Cl A', ticker:'Private', qty:117, unitCost:172.42, costBasis:20172.97, reportPrice:140.54, yahoo:null, public:false},
+  {id:'prescient', book:'credo', name:'Prescient China Equity Fund C USD Acc', ticker:'Fund', qty:104.316, unitCost:192.50, costBasis:20080.57, reportPrice:194.93, yahoo:null, public:false},
+  {id:'goehring', book:'credo', name:'Goehring & Rozencwajg Resources Fund Founder USD Acc', ticker:'Fund', qty:4730.06, unitCost:21.18, costBasis:100200.00, reportPrice:21.83, yahoo:null, public:false},
+  {id:'thornbridge', book:'credo', name:'Thornbridge Global Opportunities Feeder Fund USD', ticker:'Fund', qty:177911.2622, unitCost:1.29, costBasis:229496.44, reportPrice:1.43, yahoo:null, public:false},
+  {id:'techbridge', book:'credo', name:'Techbridge International SPC — Digital Frontier Fund', ticker:'Fund', qty:241.1373, unitCost:83.28, costBasis:20081.24, reportPrice:85.35, yahoo:null, public:false},
+  {id:'cash', book:'credo', name:'US Dollar — Pershing UK Nominee', ticker:'CASH', qty:1275.42, unitCost:1, costBasis:1275.42, reportPrice:1, yahoo:null, public:false, isCash:true},
+  {id:'cash_bank', book:'bank', name:'Cash at Bank', ticker:'CASH', qty:CASH_AT_BANK_DEFAULT, unitCost:1, costBasis:CASH_AT_BANK_DEFAULT, reportPrice:1, yahoo:null, public:false, isCash:true, isCashBank:true, note:"manual/seed from Rivera's Equity Fund view 2026-09"},
+  {id:'abi_shares', book:'abi', name:'ABI Shares (EquatePlus) locked', ticker:'BUD / ABI.BR', qty:608, unitCost:null, costBasis:40000, costBasisNote:'~USD 40k (EUR 37,108.36)', reportPrice:null, yahoo:'BUD', public:true, abiEquity:true},
+  {id:'abi_rsu', book:'abi', name:'ABI RSUs (EquatePlus) locked', ticker:'BUD / ABI.BR', qty:7566.853, unitCost:0, costBasis:0, reportPrice:null, yahoo:'BUD', public:true, abiEquity:true, note:'Includes 132.853 notional dividend RSUs'},
+  {id:'abi_options', book:'abi', name:'ABI Options (2 tranches)', ticker:'—', qty:2411, unitCost:0, costBasis:0, reportPrice:0, yahoo:null, public:false, isOptions:true}
+];
+
+/* [Guessing] illustrative vintage stacks — Val LY + Cap In + Gain = Val YE (~$1.72M in 2026) */
+const VINTAGE_SEED = [
+  {year:'2017', valLy:  50000, capIn:250000, gain: 69000},  // 369k
+  {year:'2021', valLy: 369000, capIn:320000, gain:126000},  // 815k
+  {year:'2022', valLy: 815000, capIn: 45000, gain: 40000},  // 900k
+  {year:'2023', valLy: 900000, capIn:120000, gain: 80000},  // 1.10M
+  {year:'2024', valLy:1100000, capIn:150000, gain:100000},  // 1.35M
+  {year:'2025', valLy:1350000, capIn:100000, gain:100000},  // 1.55M
+  {year:'2026', valLy:1550000, capIn: 80000, gain: 90000}   // 1.72M
+];
+
+const VESTING = [
+  {type:'Share', grant:'Voluntary Shares', grantDate:'01 Mar 2024', vestDate:'01 Mar 2027', qty:133, awardUsd:8470.77},
+  {type:'RSU', grant:'SBC Plan 2024', grantDate:'01 Mar 2024', vestDate:'01 Mar 2027', qty:443, awardUsd:28905.75},
+  {type:'RSU', grant:'RSU 01/12/2023 – Annual LTI', grantDate:'01 Dec 2023', vestDate:'01 Dec 2026', qty:1587, awardUsd:103964.37},
+  {type:'RSU', grant:'LTI 2021 Series B (5Y)', grantDate:'01 Dec 2021', vestDate:'01 Dec 2026', qty:302, awardUsd:18742.12},
+  {type:'RSU', grant:'RSU 02/12/2024 – Annual LTI', grantDate:'02 Dec 2024', vestDate:'02 Dec 2027', qty:1486, awardUsd:87005.30},
+  {type:'Share', grant:'Voluntary Shares', grantDate:'28 Feb 2025', vestDate:'28 Feb 2028', qty:247, awardUsd:16306.94},
+  {type:'RSU', grant:'SBC Plan 2025', grantDate:'28 Feb 2025', vestDate:'28 Feb 2028', qty:821, awardUsd:55524.23},
+  {type:'RSU', grant:'RSU 01/12/2025 – Annual LTI', grantDate:'01 Dec 2025', vestDate:'01 Dec 2028', qty:2038, awardUsd:133509.38},
+  {type:'Share', grant:'Voluntary Shares', grantDate:'16 Feb 2026', vestDate:'16 Feb 2029', qty:228, awardUsd:17638.08},
+  {type:'RSU', grant:'SBC Plan 2026', grantDate:'16 Feb 2026', vestDate:'16 Feb 2029', qty:757, awardUsd:59992.25}
+];
+
+const OPTIONS = [
+  {id:'opt_dec26', label:'LTI / Dec 2026', qty:1470, strikeEur:97.99, expiry:'14 Dec 2026'},
+  {id:'opt_nov27', label:'Nov 2027', qty:941, strikeEur:96.70, expiry:'30 Nov 2027'}
+];
+
+const LS_KEY = 'tomas_equity_overrides_v1';
+let view = 'total';
+let quotes = Object.assign({}, BUILD_QUOTES);
+let lastRefresh = new Date();
+let allocChart, goalChart, vintageChart;
+
+function money(n, dig=0){
+  if(n==null || !isFinite(n)) return '—';
+  const abs = Math.abs(n);
+  const s = abs.toLocaleString('en-US',{minimumFractionDigits:dig, maximumFractionDigits:dig});
+  return (n<0?'-':'') + '$' + s;
+}
+function pct(n, dig=1){
+  if(n==null || !isFinite(n)) return '—';
+  return (n>=0?'+':'') + n.toFixed(dig) + '%';
+}
+function num(n, dig=2){
+  if(n==null || !isFinite(n)) return '—';
+  return n.toLocaleString('en-US',{minimumFractionDigits:dig, maximumFractionDigits:dig});
+}
+function loadOverrides(){
+  if (window.__ROLE__ !== 'owner') return {}; // viewers: no overrides
+  try{ return JSON.parse(localStorage.getItem(LS_KEY)||'{}'); }catch(e){ return {}; }
+}
+function saveOverrides(o){
+  if (window.__ROLE__ !== 'owner') return;
+  localStorage.setItem(LS_KEY, JSON.stringify(o));
+}
+
+function getFx(){
+  const q = quotes['EURUSD=X'];
+  return (q && q.price) ? q.price : 1.16;
+}
+function getBud(){
+  const q = quotes['BUD'];
+  return (q && q.price) ? q.price : null;
+}
+function getAbiEur(){
+  const q = quotes['ABI.BR'];
+  return (q && q.price) ? q.price : null;
+}
+
+function cashBankQty(){
+  const ov = loadOverrides();
+  if(ov['cash_bank'] != null && ov['cash_bank'] !== '' && isFinite(+ov['cash_bank'])){
+    return +ov['cash_bank']; // admin override = USD amount
+  }
+  return CASH_AT_BANK_DEFAULT;
+}
+
+function resolvePrice(h){
+  const ov = loadOverrides();
+  if(h.isCashBank){
+    // amount driven by qty helper; price always 1 unless non-cash override misuse
+    return {price:1, source: (ov['cash_bank']!=null && ov['cash_bank']!=='') ? 'manual' : 'cash'};
+  }
+  if(ov[h.id] != null && ov[h.id] !== '' && isFinite(+ov[h.id])){
+    return {price:+ov[h.id], source:'manual'};
+  }
+  if(h.isCash) return {price:1, source:'cash'};
+  if(h.isOptions){
+    const abi = getAbiEur(); const fx = getFx();
+    if(abi==null) return {price:0, source:'stale'};
+    let totEur = 0;
+    OPTIONS.forEach(o => { totEur += Math.max(0, abi - o.strikeEur) * o.qty; });
+    const usd = totEur * fx;
+    const px = h.qty ? usd / h.qty : 0;
+    return {price:px, source: usd>0 ? 'live' : 'live', intrinsicUsd: usd};
+  }
+  if(h.abiEquity){
+    const bud = getBud();
+    if(bud!=null) return {price:bud, source:'live'};
+    return {price:h.reportPrice || 0, source:'stale'};
+  }
+  if(h.public && h.yahoo){
+    const q = quotes[h.yahoo];
+    if(q && q.price!=null) return {price:q.price, source:'live'};
+  }
+  return {price:h.reportPrice, source:'stale'};
+}
+
+function holdingQty(h){
+  if(h.isCashBank) return cashBankQty();
+  return h.qty;
+}
+function holdingCostBasis(h){
+  if(h.isCashBank) return cashBankQty();
+  return h.costBasis || 0;
+}
+
+function rowsForView(){
+  if(view==='credo') return HOLDINGS.filter(h=>h.book==='credo');
+  if(view==='abi') return HOLDINGS.filter(h=>h.book==='abi');
+  return HOLDINGS.slice();
+}
+
+function compute(){
+  const rows = rowsForView().map(h=>{
+    const rp = resolvePrice(h);
+    const qty = holdingQty(h);
+    const mv = h.isOptions ? (rp.intrinsicUsd||0) : qty * rp.price;
+    const cb = holdingCostBasis(h);
+    const gl = mv - cb;
+    const glp = cb ? (gl/cb)*100 : (mv>0 && cb===0 ? Infinity : 0);
+    return Object.assign({}, h, {qty, price:rp.price, source:rp.source, mv, cb, gl, glp, intrinsicUsd:rp.intrinsicUsd});
+  });
+  const totalMv = rows.reduce((s,r)=>s+r.mv,0);
+  const totalCb = rows.reduce((s,r)=>s+r.cb,0);
+  rows.forEach(r => r.weight = totalMv ? (r.mv/totalMv)*100 : 0);
+  return {rows, totalMv, totalCb, pnl: totalMv-totalCb};
+}
+
+function computeBook(filterFn){
+  const rows = HOLDINGS.filter(filterFn).map(h=>{
+    const rp = resolvePrice(h);
+    const qty = holdingQty(h);
+    const mv = h.isOptions ? (rp.intrinsicUsd||0) : qty * rp.price;
+    const cb = holdingCostBasis(h);
+    const gl = mv - cb;
+    const glp = cb ? (gl/cb)*100 : (mv>0 && cb===0 ? Infinity : 0);
+    return Object.assign({}, h, {qty, price:rp.price, source:rp.source, mv, cb, gl, glp, intrinsicUsd:rp.intrinsicUsd});
+  });
+  const totalMv = rows.reduce((s,r)=>s+r.mv,0);
+  const totalCb = rows.reduce((s,r)=>s+r.cb,0);
+  const totalQty = rows.reduce((s,r)=>s+(r.isOptions?0:r.qty),0);
+  return {rows, totalMv, totalCb, totalQty, pnl: totalMv-totalCb, glp: totalCb ? ((totalMv-totalCb)/totalCb)*100 : 0};
+}
+
+function monthsToTarget(){
+  const now = new Date();
+  const ms = TARGET_DATE - now;
+  return Math.max(1, ms/(1000*60*60*24*30.4375));
+}
+
+let prevMixMv = {};
+function mixCardHTML(c){
+  const xirrCls = (c.xirr!=null && c.xirr<0) ? 'mv xirr dn' : 'mv xirr';
+  const live = !!c.liveShares;
+  const cls = 'mix-card' + (live ? ' live-shares live-pulse' : '');
+  return `<div class="${cls}" data-mix-id="${c.id}" data-mv="${c.mv}">
+    <div class="mix-label">${c.label}</div>
+    <div class="mix-value" data-role="mv">${money(c.mv)}</div>
+    <div class="mix-mid">
+      <div>
+        <div class="ml">${c.leftLab}</div>
+        <div class="mv" data-role="left">${c.leftVal}</div>
+      </div>
+      <div>
+        <div class="ml">${c.rightLab}</div>
+        <div class="${xirrCls}" data-role="right">${c.rightVal}</div>
+        ${c.rightNote?`<div class="mix-note">${c.rightNote}</div>`:''}
+      </div>
+    </div>
+    <div class="mix-bot">
+      <div><div class="ml">Shares</div><div class="mv">${c.shares}</div></div>
+      <div><div class="ml">Cost/sh</div><div class="mv">${c.costSh}</div></div>
+      <div><div class="ml">Val/sh</div><div class="mv live-num" data-role="valsh">${c.valSh}</div></div>
+    </div>
+  </div>`;
+}
+
+function flashMixCards(cards){
+  cards.forEach(c=>{
+    if(!c.liveShares) { prevMixMv[c.id]=c.mv; return; }
+    const el = document.querySelector(`[data-mix-id="${c.id}"]`);
+    if(!el) { prevMixMv[c.id]=c.mv; return; }
+    const prev = prevMixMv[c.id];
+    prevMixMv[c.id]=c.mv;
+    if(prev==null || !isFinite(prev)) return;
+    const delta = c.mv - prev;
+    if(Math.abs(delta) < 0.5) return; // ignore noise
+    const dir = delta>0 ? 'tick-up' : 'tick-dn';
+    el.classList.remove('tick-up','tick-dn','live-pulse');
+    void el.offsetWidth;
+    el.classList.add(dir);
+    const mvEl = el.querySelector('[data-role="mv"]');
+    const vsEl = el.querySelector('[data-role="valsh"]');
+    [mvEl, vsEl].forEach(n=>{
+      if(!n) return;
+      n.classList.remove('tick-up','tick-dn');
+      void n.offsetWidth;
+      n.classList.add(dir);
+      setTimeout(()=>n.classList.remove('tick-up','tick-dn'), 900);
+    });
+    setTimeout(()=>{
+      el.classList.remove('tick-up','tick-dn');
+      if(el.classList.contains('live-shares')) el.classList.add('live-pulse');
+    }, 900);
+  });
+}
+
+function renderMix(){
+  const all = computeBook(()=>true);
+  const ren = computeBook(h=>h.book==='credo' && !h.isCash); // Renaissance = Credo invested EXCLUDING Pershing cash
+  const abi = computeBook(h=>h.book==='abi');
+  const cashP = computeBook(h=>h.id==='cash');
+  const cashB = computeBook(h=>h.id==='cash_bank');
+
+  const allMv = all.totalMv;
+  const toTarget = allMv/GOAL*100;
+
+  // Shares: Renaissance sum of units; ABI display 8042 (CSV); cash = amount; All = sum of display shares
+  const renShares = ren.totalQty;
+  const abiShares = ABI_SHARES_DISPLAY;
+  const cashPShares = cashP.totalQty;
+  const cashBShares = cashB.totalQty;
+  const allShares = renShares + abiShares + cashPShares + cashBShares;
+
+  // ABI cost for display: shares+RSU cost bases (options 0); val uses full ABI MV incl options intrinsic
+  const abiEqRows = abi.rows.filter(r=>!r.isOptions);
+  const abiCost = abiEqRows.reduce((s,r)=>s+r.cb,0);
+  const abiMvEq = abiEqRows.reduce((s,r)=>s+r.mv,0) + (abi.rows.find(r=>r.isOptions)?.mv||0);
+
+  const renCostSh = renShares ? ren.totalCb/renShares : 0;
+  const renValSh = renShares ? ren.totalMv/renShares : 0;
+  const abiCostSh = abiShares ? abiCost/abiShares : 0;
+  const abiValSh = abiShares ? abiMvEq/abiShares : 0;
+  const allCost = ren.totalCb + abiCost + cashP.totalCb + cashB.totalCb;
+  const allCostSh = allShares ? allCost/allShares : 0;
+  const allValSh = allShares ? allMv/allShares : 0;
+
+  const cards = [
+    {
+      id:'all', liveShares:true,
+      label:'All Holdings',
+      mv: allMv,
+      leftLab:'% to $2M target',
+      leftVal: toTarget.toFixed(1)+'%',
+      rightLab:'XIRR',
+      rightVal: pct(XIRR_SEED),
+      rightNote: '[report] seed · live '+pct(all.glp)+' vs cost',
+      xirr: XIRR_SEED,
+      shares: num(allShares, allShares%1?1:0),
+      costSh: money(allCostSh,2),
+      valSh: money(allValSh,2)
+    },
+    {
+      id:'renaissance', liveShares:true,
+      label:'Renaissance',
+      mv: ren.totalMv,
+      leftLab:'Mix',
+      leftVal: (allMv? ren.totalMv/allMv*100:0).toFixed(1)+'%',
+      rightLab:'XIRR',
+      rightVal: pct(ren.glp),
+      rightNote: 'live return vs cost',
+      xirr: ren.glp,
+      shares: num(renShares, renShares%1?1:0),
+      costSh: money(renCostSh,2),
+      valSh: money(renValSh,2)
+    },
+    {
+      id:'abi', liveShares:true,
+      label:'ABInBev',
+      mv: abiMvEq,
+      leftLab:'Mix',
+      leftVal: (allMv? abiMvEq/allMv*100:0).toFixed(1)+'%',
+      rightLab:'XIRR',
+      rightVal: abiCost? pct((abiMvEq-abiCost)/abiCost*100) : 'n/m',
+      rightNote: 'live return vs cost',
+      xirr: abiCost? ((abiMvEq-abiCost)/abiCost*100) : 0,
+      shares: num(abiShares,0),
+      costSh: money(abiCostSh,2),
+      valSh: money(abiValSh,2)
+    },
+    {
+      id:'cash_p', liveShares:false,
+      label:'Cash — Pershing',
+      mv: cashP.totalMv,
+      leftLab:'Mix',
+      leftVal: (allMv? cashP.totalMv/allMv*100:0).toFixed(1)+'%',
+      rightLab:'XIRR',
+      rightVal: '+0.0%',
+      xirr: 0,
+      shares: num(cashPShares,2),
+      costSh: '$1.00',
+      valSh: '$1.00'
+    },
+    {
+      id:'cash_b', liveShares:false,
+      label:'Cash at Bank',
+      mv: cashB.totalMv,
+      leftLab:'Mix',
+      leftVal: (allMv? cashB.totalMv/allMv*100:0).toFixed(1)+'%',
+      rightLab:'XIRR',
+      rightVal: '+0.0%',
+      rightNote: 'seed 2026-09',
+      xirr: 0,
+      shares: num(cashBShares,0),
+      costSh: '$1.00',
+      valSh: '$1.00'
+    }
+  ];
+  document.getElementById('mixRow').innerHTML = cards.map(mixCardHTML).join('');
+  flashMixCards(cards);
+}
+
+function renderVintage(){
+  const labels = VINTAGE_SEED.map(v=>v.year);
+  const valLy = VINTAGE_SEED.map(v=>v.valLy);
+  const capIn = VINTAGE_SEED.map(v=>v.capIn);
+  const gain = VINTAGE_SEED.map(v=>v.gain);
+  const totals = VINTAGE_SEED.map(v=>v.valLy+v.capIn+v.gain);
+
+  const totalLabelPlugin = {
+    id: 'stackTotals',
+    afterDatasetsDraw(chart){
+      const {ctx, scales:{x,y}} = chart;
+      ctx.save();
+      ctx.fillStyle = '#e8edf4';
+      ctx.font = '600 11px IBM Plex Sans, sans-serif';
+      ctx.textAlign = 'center';
+      totals.forEach((t,i)=>{
+        const meta0 = chart.getDatasetMeta(0);
+        const meta1 = chart.getDatasetMeta(1);
+        const meta2 = chart.getDatasetMeta(2);
+        const bar = meta2.data[i] || meta1.data[i] || meta0.data[i];
+        if(!bar) return;
+        const top = Math.min(meta0.data[i].y, meta1.data[i].y, meta2.data[i].y);
+        const label = t>=1000000 ? ('$'+(t/1000000).toFixed(2).replace(/\.?0+$/,'')+'M') : ('$'+Math.round(t/1000)+'K');
+        ctx.fillText(label, bar.x, top - 8);
+      });
+      ctx.restore();
+    }
+  };
+
+  if(vintageChart) vintageChart.destroy();
+  vintageChart = new Chart(document.getElementById('vintageChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Val LY', data:valLy, backgroundColor:'#4b5563', borderRadius:0, stack:'v'},
+        {label:'Cap In', data:capIn, backgroundColor:'#a78bfa', borderRadius:0, stack:'v'},
+        {label:'Gain', data:gain, backgroundColor:'#14b8a6', borderRadius:4, stack:'v'}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom', labels:{color:'#8b97a8', boxWidth:12, font:{size:11}}},
+        tooltip:{callbacks:{
+          footer:(items)=>{
+            const i = items[0].dataIndex;
+            return 'Val YE: '+money(totals[i]);
+          },
+          label: c => c.dataset.label+': '+money(c.raw)
+        }}
+      },
+      scales:{
+        x:{stacked:true, ticks:{color:'#8b97a8'}, grid:{display:false}},
+        y:{stacked:true, ticks:{color:'#8b97a8', callback:v => v>=1e6?('$'+(v/1e6).toFixed(1)+'M'):('$'+(v/1e3).toFixed(0)+'K')}, grid:{color:'#1a2029'}}
+      }
+    },
+    plugins:[totalLabelPlugin]
+  });
+}
+
+function renderKpis(data){
+  const {totalMv, totalCb, pnl} = data;
+  const gap = GOAL - totalMv;
+  const prog = Math.min(100, (totalMv/GOAL)*100);
+  const m = monthsToTarget();
+  const monthly = gap>0 ? gap/m : 0;
+  const cagr = totalMv>0 ? (Math.pow(GOAL/totalMv, 12/m) - 1) * 100 : 0;
+
+  document.getElementById('kpiTotal').textContent = money(totalMv);
+  document.getElementById('kpiTotalSub').textContent = 'Cost ' + money(totalCb) + ' · view: ' + view;
+  const gapEl = document.getElementById('kpiGap');
+  gapEl.textContent = gap>0 ? money(gap) : money(0);
+  gapEl.className = 'kpi-value ' + (gap>0 ? 'warn' : 'up');
+  document.getElementById('kpiGapSub').textContent = m.toFixed(1) + ' months remaining';
+  document.getElementById('kpiProg').textContent = prog.toFixed(1) + '%';
+  document.getElementById('kpiProgSub').textContent = money(totalMv) + ' / $2,000,000';
+  const pnlEl = document.getElementById('kpiPnl');
+  pnlEl.textContent = money(pnl);
+  pnlEl.className = 'kpi-value ' + (pnl>=0?'up':'dn');
+  document.getElementById('kpiPnlSub').textContent = totalCb ? pct((pnl/totalCb)*100) + ' vs cost' : '—';
+
+  document.getElementById('goalFill').style.width = prog + '%';
+  document.getElementById('goalLeft').textContent = money(totalMv) + ' (' + prog.toFixed(1) + '%)';
+  document.getElementById('scenMonthly').textContent = gap>0 ? money(monthly) + '/mo' : 'At / above goal';
+  document.getElementById('scenCagr').textContent = gap>0 ? cagr.toFixed(1) + '% / yr' : '—';
+}
+
+function sourcePill(r){
+  if(r.isCashBank && r.source==='cash') return '<span class="pill manual" title="'+ (r.note||'') +'">Seed</span>';
+  if(r.unresolved) return '<span class="pill stale" title="'+ (r.note||'') +'">Stale — report</span>';
+  if(r.source==='live') return '<span class="pill live">Live</span>';
+  if(r.source==='manual') return '<span class="pill manual">Manual</span>';
+  if(r.source==='cash') return '<span class="pill cash">Cash</span>';
+  return '<span class="pill stale">Stale — report</span>';
+}
+
+function renderTable(data){
+  const tb = document.getElementById('holdingsBody');
+  tb.innerHTML = data.rows.map(r=>{
+    const glClass = r.gl>=0?'up':'dn';
+    const priceNote = r.unresolved ? ' <span class="pill warn">≠ US QQQ</span>' : '';
+    const uc = r.unitCost!=null ? money(r.unitCost,2) : '—';
+    const px = r.isOptions ? (r.intrinsicUsd>0? money(r.price,4): '$0.00') : money(r.price, r.price<5?4:2);
+    const glp = !isFinite(r.glp) ? 'n/m' : pct(r.glp);
+    return '<tr>' +
+      '<td><div class="name-cell"><span class="n">'+r.name+'</span><span class="t">'+r.ticker+(r.note?' · '+r.note:'')+'</span></div></td>' +
+      '<td>'+num(r.qty, r.qty%1?4:0)+'</td>' +
+      '<td>'+uc+'</td>' +
+      '<td>'+px+priceNote+'</td>' +
+      '<td>'+money(r.cb)+(r.costBasisNote?'<div class="t" style="font-size:.68rem;color:var(--muted)">'+r.costBasisNote+'</div>':'')+'</td>' +
+      '<td>'+money(r.mv)+'</td>' +
+      '<td class="'+glClass+'">'+money(r.gl)+'</td>' +
+      '<td class="'+glClass+'">'+glp+'</td>' +
+      '<td>'+r.weight.toFixed(1)+'%</td>' +
+      '<td>'+sourcePill(r)+'</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function renderVesting(){
+  const bud = getBud();
+  document.getElementById('vestBody').innerHTML = VESTING.map(v=>{
+    const live = bud!=null ? bud*v.qty : null;
+    return '<tr><td>'+v.type+'</td><td>'+v.grant+'</td><td>'+v.grantDate+'</td><td><strong>'+v.vestDate+'</strong></td><td>'+num(v.qty,0)+'</td><td>'+money(v.awardUsd)+'</td><td>'+(live!=null?('~'+money(live)+' @ BUD'):'locked')+'</td></tr>';
+  }).join('') + '<tr><td colspan="4"><strong>TOTAL qty</strong></td><td><strong>'+num(VESTING.reduce((s,v)=>s+v.qty,0),0)+'</strong></td><td><strong>'+money(VESTING.reduce((s,v)=>s+v.awardUsd,0))+'</strong></td><td>CSV total shares+RSUs (excl. options)</td></tr>';
+}
+
+function renderOptions(){
+  const abi = getAbiEur(); const fx = getFx();
+  document.getElementById('optBody').innerHTML = OPTIONS.map(o=>{
+    const intr = abi!=null ? Math.max(0, abi - o.strikeEur) : 0;
+    const usd = abi!=null ? intr * o.qty * fx : 0;
+    const status = abi==null ? 'No quote' : (intr>0 ? 'ITM' : 'UNDERWATER');
+    const cls = status==='UNDERWATER'?'dn': (status==='ITM'?'up':'');
+    return '<tr><td>'+o.label+'</td><td>'+num(o.qty,0)+'</td><td>€'+o.strikeEur.toFixed(2)+'</td><td>'+o.expiry+'</td><td>'+(abi!=null?('€'+abi.toFixed(2)):'—')+'</td><td class="'+cls+'">'+(abi!=null?('€'+intr.toFixed(2)):'—')+'</td><td class="'+cls+'">'+money(usd)+'</td><td class="'+cls+'"><strong>'+status+'</strong></td></tr>';
+  }).join('');
+}
+
+function renderRecs(data){
+  const all = (()=>{ const v=view; view='total'; const d=compute(); view=v; return d; })();
+  const credo = HOLDINGS.filter(h=>h.book==='credo').map(h=>{const rp=resolvePrice(h); const qty=holdingQty(h); return {h, mv:h.isOptions?0:qty*rp.price};});
+  const credoMv = credo.reduce((s,x)=>s+x.mv,0);
+  const ivvMv = credo.find(x=>x.h.id==='ivv').mv;
+  const ivvPctCredo = credoMv? ivvMv/credoMv*100:0;
+  const abiRsu = all.rows.find(r=>r.id==='abi_rsu');
+  const abiShares = all.rows.find(r=>r.id==='abi_shares');
+  const abiEq = (abiRsu?.mv||0)+(abiShares?.mv||0);
+  const abiPct = all.totalMv? abiEq/all.totalMv*100:0;
+  const spacex = all.rows.find(r=>r.id==='spacex');
+  const cash = all.rows.find(r=>r.id==='cash');
+  const cashBank = all.rows.find(r=>r.id==='cash_bank');
+  const gap = GOAL - all.totalMv;
+  const m = monthsToTarget();
+  const monthly = gap>0? gap/m:0;
+  const cagr = all.totalMv>0? (Math.pow(GOAL/all.totalMv,12/m)-1)*100:0;
+
+  const recs = [
+    {cls:'risk', title:'Concentration: IVV + ABI employment equity',
+     body:`IVV is ~${ivvPctCredo.toFixed(0)}% of Credo. ABI shares+RSUs are ~${abiPct.toFixed(0)}% of total equity (~${money(abiEq)}) — and you work at ABI. That is single-employer + single-name risk stacked. <span class="tag certain">Certain</span>`},
+    {cls:'warn', title:'Credo Nasdaq line — do not use US QQQ',
+     body:`376 units marked $296.43 (Aug 27). US QQQ is ~$715; treating them as the same instrument would overstate NAV by ~$157k. Keep stale until ISIN confirmed. <span class="tag certain">Certain</span>`},
+    {cls:'risk', title:'SpaceX private mark below cost',
+     body:`SpaceX at $${(spacex?.price||140.54).toFixed(2)} vs unit cost $172.42 → unrealised ~${money(spacex?.gl||0)} (${pct(spacex?.glp||0)}). Illiquid; mark is a report price, not a bid. Liquidity/valuation risk. <span class="tag likely">Likely</span>`},
+    {cls:'risk', title:'Options expiring Dec 2026 still underwater',
+     body:`1,470 options @ €97.99 expire 14 Dec 2026; ABI.BR ~€${(getAbiEur()||0).toFixed(2)}. Intrinsic = $0 unless ABI rallies hard (~45%+ in EUR). Likely expire worthless — do not count on them for the $2M path. <span class="tag likely">Likely</span>`},
+    {cls:'opp', title:`Cash at Bank seeded at ${money(cashBank?.mv||CASH_AT_BANK_DEFAULT)}`,
+     body:`Pershing cash remains thin (~${money(cash?.mv||1275)}). Bank cash line is a <strong>manual/seed</strong> from the Equity Fund view (2026-09) — confirm with Galo and override in Admin if the real balance differs. <span class="tag guess">Guessing</span> until bank statement wired.`},
+    {cls:'opp', title:`Path to $2M — gap ${money(gap)}`,
+     body:`From ~${money(all.totalMv)} today (incl. bank cash): (1) if markets flat, invest/save ~${money(monthly)}/mo for ${m.toFixed(1)} mo; (2) if no new cash, need ~${cagr.toFixed(1)}% CAGR; (3) realistic blend — raise savings rate + harvest ABI vests (Dec 2026 / Mar 2027 clusters) without selling into a single-stock hole + trim IVV overweight into diversifiers once Nasdaq UCITS ISIN is known. <span class="tag guess">Guessing</span> on exact savings capacity; math on gap is <span class="tag certain">Certain</span>.`}
+  ];
+  document.getElementById('recList').innerHTML = recs.map(r=>
+    `<div class="rec-item ${r.cls}"><h3>${r.title}</h3><p>${r.body}</p></div>`
+  ).join('');
+}
+
+function renderCharts(data){
+  const labels = data.rows.filter(r=>r.mv>0.5).map(r=> r.ticker && r.ticker!=='—' && r.ticker!=='Fund' && r.ticker!=='Private' && r.ticker!=='CASH' ? r.ticker : r.name.split(' ').slice(0,3).join(' '));
+  const values = data.rows.filter(r=>r.mv>0.5).map(r=>r.mv);
+  const colors = ['#14b8a6','#3d9cf0','#3dd68c','#f0a030','#a78bfa','#f07178','#e6c07b','#7aa2f7','#9ece6a','#bb9af7','#89ddff','#ff9e64','#73daca'];
+  if(allocChart) allocChart.destroy();
+  allocChart = new Chart(document.getElementById('allocChart'), {
+    type:'doughnut',
+    data:{labels, datasets:[{data:values, backgroundColor:colors.slice(0,values.length), borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{color:'#8b97a8', boxWidth:12, font:{size:11}}}}, cutout:'62%'}
+  });
+  const prog = Math.min(100, (data.totalMv/GOAL)*100);
+  if(goalChart) goalChart.destroy();
+  goalChart = new Chart(document.getElementById('goalChart'), {
+    type:'bar',
+    data:{labels:['Progress to $2M'], datasets:[
+      {label:'Current', data:[prog], backgroundColor:'#14b8a6', borderRadius:6},
+      {label:'Remaining', data:[Math.max(0,100-prog)], backgroundColor:'#2a3340', borderRadius:6}
+    ]},
+    options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, scales:{x:{stacked:true, max:100, ticks:{color:'#8b97a8'}, grid:{color:'#1a2029'}}, y:{stacked:true, ticks:{color:'#8b97a8'}, grid:{display:false}}}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toFixed(1)+'%'}}}}
+  });
+}
+
+function renderAdmin(){
+  const ov = loadOverrides();
+  document.getElementById('adminBody').innerHTML = HOLDINGS.map(h=>{
+    const cur = resolvePrice(h);
+    const qty = holdingQty(h);
+    if(h.isCashBank){
+      return `<div class="admin-row">
+        <label>${h.name}<br><span style="color:var(--muted);font-size:.72rem">${h.id} · current ${money(qty)} (seed/manual amount)</span></label>
+        <input type="number" step="any" data-id="${h.id}" placeholder="Override USD amount" value="${ov[h.id]!=null?ov[h.id]:''}" />
+        <button class="btn" type="button" data-save="${h.id}">Save</button>
+      </div>`;
+    }
+    return `<div class="admin-row">
+      <label>${h.name}<br><span style="color:var(--muted);font-size:.72rem">${h.id} · current ${money(cur.price,4)} (${cur.source})</span></label>
+      <input type="number" step="any" data-id="${h.id}" placeholder="Override USD price" value="${ov[h.id]!=null?ov[h.id]:''}" />
+      <button class="btn" type="button" data-save="${h.id}">Save</button>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-save]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute('data-save');
+      const input = document.querySelector(`input[data-id="${id}"]`);
+      const o = loadOverrides();
+      if(input.value==='') delete o[id]; else o[id]=+input.value;
+      saveOverrides(o); refreshUI();
+    };
+  });
+}
+
+function downloadReportStub(){
+  const all = computeBook(()=>true);
+  const lines = [
+    "Rivera's Equity Fund — Summary",
+    'Generated: ' + new Date().toLocaleString(),
+    '',
+    'Total equity: ' + money(all.totalMv),
+    'Cost basis: ' + money(all.totalCb),
+    'Unrealised P&L: ' + money(all.pnl) + ' (' + pct(all.glp) + ')',
+    'XIRR seed [report]: ' + pct(XIRR_SEED),
+    '% to $2M: ' + (all.totalMv/GOAL*100).toFixed(1) + '%',
+    'Cash at Bank: ' + money(cashBankQty()) + ' (manual/seed)',
+    '',
+    'Tip: use browser Print → Save as PDF for a formatted copy.',
+    ''
+  ];
+  // Prefer print for PDF; also offer a text download
+  try{
+    const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Rivera_Equity_Fund_Summary.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }catch(e){}
+  setTimeout(()=>window.print(), 250);
+}
+
+function refreshUI(){
+  const data = compute();
+  renderMix();
+  renderKpis(data);
+  renderTable(data);
+  renderVesting();
+  renderOptions();
+  renderRecs(data);
+  renderCharts(data);
+  document.getElementById('refreshTime').textContent = 'Last refresh: ' + lastRefresh.toLocaleString();
+  document.getElementById('abiSection').style.display = (view==='credo') ? 'none' : '';
+}
+
+async function fetchYahoo(symbol){
+  const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol) + '?interval=1m&range=1d';
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(symbol+' HTTP '+res.status);
+  const data = await res.json();
+  const meta = data.chart.result[0].meta;
+  return {symbol, price: meta.regularMarketPrice ?? meta.previousClose, prevClose: meta.previousClose ?? meta.chartPreviousClose, currency: meta.currency, exchange: meta.exchangeName};
+}
+
+async function refreshQuotes(){
+  const syms = ['IVV','GOOGL','TSLA','BUD','ABI.BR','EURUSD=X'];
+  const badge = document.getElementById('liveBadge');
+  try{
+    const results = await Promise.all(syms.map(s=>fetchYahoo(s).catch(e=>({error:String(e), symbol:s}))));
+    let ok=0, fail=0;
+    results.forEach(r=>{
+      if(r && r.price!=null){ quotes[r.symbol]=r; ok++; }
+      else fail++;
+    });
+    lastRefresh = new Date();
+    badge.className = 'live-badge' + (ok? '' : ' stale');
+    badge.innerHTML = '<span class="live-dot"></span> ' + (ok? 'LIVE' : 'STALE');
+    if(fail) console.warn('Quote failures', results.filter(r=>r.error));
+  }catch(e){
+    badge.className = 'live-badge stale';
+    badge.innerHTML = '<span class="live-dot"></span> STALE';
+    console.warn(e);
+  }
+  refreshUI();
+}
+
+document.getElementById('viewChips').addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  view = b.dataset.view;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c===b));
+  refreshUI();
+});
+document.getElementById('btnRefresh').onclick = ()=>refreshQuotes();
+document.getElementById('btnReport').onclick = ()=>downloadReportStub();
+document.getElementById('btnAdmin').onclick = ()=>{
+  const p = document.getElementById('adminPanel');
+  p.open = !p.open;
+  if(p.open) renderAdmin();
+};
+document.getElementById('btnClearOverrides').onclick = ()=>{ localStorage.removeItem(LS_KEY); renderAdmin(); refreshUI(); };
+document.getElementById('adminPanel').addEventListener('toggle', (e)=>{ if(e.target.open) renderAdmin(); });
+
+/* ===== Client-side Google auth (GitHub Pages) ===== */
+const CFG = window.RIVERA_EQUITY_CONFIG || {};
+const SESSION_KEY = CFG.SESSION_KEY || 'rivera_equity_session';
+const ALLOW = {};
+if (CFG.OWNER_EMAIL) ALLOW[String(CFG.OWNER_EMAIL).toLowerCase()] = 'owner';
+if (CFG.VIEWER_EMAIL) ALLOW[String(CFG.VIEWER_EMAIL).toLowerCase()] = 'viewer';
+
+function b64urlJson(part) {
+  const pad = '='.repeat((4 - (part.length % 4)) % 4);
+  const b64 = (part + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const json = decodeURIComponent(Array.prototype.map.call(atob(b64), c =>
+    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+  ).join(''));
+  return JSON.parse(json);
+}
+
+function readSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || !s.email || !s.role || !s.exp) return null;
+    if (Date.now() > Number(s.exp)) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    const expected = ALLOW[String(s.email).toLowerCase()];
+    if (!expected || expected !== s.role) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return s;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeSession(email, role) {
+  const hours = Number(CFG.SESSION_HOURS) || 12;
+  const payload = {
+    email: String(email).toLowerCase(),
+    role,
+    exp: Date.now() + hours * 60 * 60 * 1000
+  };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  return payload;
+}
+
+function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('loginErr');
+  if (!el) return;
+  el.textContent = msg || 'Sign-in failed';
+  el.classList.add('show');
+}
+
+function applyRoleChrome(session) {
+  window.__ROLE__ = session.role;
+  window.__USER_EMAIL__ = session.email;
+  document.documentElement.classList.remove('role-owner', 'role-viewer');
+  document.body.classList.remove('role-owner', 'role-viewer');
+  document.documentElement.classList.add('role-' + session.role);
+  document.body.classList.add('role-' + session.role);
+  const emailEl = document.getElementById('authEmail');
+  if (emailEl) emailEl.textContent = session.email;
+  // Viewer: hide Admin + Members (keep DOM but CSS + strip for safety)
+  if (session.role !== 'owner') {
+    document.querySelectorAll('.owner-only').forEach((n) => { n.style.display = 'none'; });
+  }
+}
+
+function showApp(session) {
+  applyRoleChrome(session);
+  const overlay = document.getElementById('loginOverlay');
+  const root = document.getElementById('appRoot');
+  if (overlay) {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+  if (root) root.classList.add('authed');
+  try { if (typeof refreshUI === 'function') refreshUI(); } catch (e) {}
+}
+
+function showLogin() {
+  const overlay = document.getElementById('loginOverlay');
+  const root = document.getElementById('appRoot');
+  if (overlay) {
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+  if (root) root.classList.remove('authed');
+  const hint = document.getElementById('allowedHint');
+  if (hint) {
+    hint.textContent = 'Allowed: ' + (CFG.OWNER_EMAIL || '') + ' (owner), ' + (CFG.VIEWER_EMAIL || '') + ' (viewer).';
+  }
+}
+
+async function optionallyValidateAud(idToken) {
+  try {
+    const res = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken));
+    if (!res.ok) return; // CORS or network — rely on GIS + payload
+    const info = await res.json();
+    if (info.aud && CFG.CLIENT_ID && info.aud !== CFG.CLIENT_ID) {
+      throw new Error('Token audience mismatch');
+    }
+  } catch (e) {
+    if (e && e.message === 'Token audience mismatch') throw e;
+    // CORS / network failures are OK
+  }
+}
+
+async function handleCredential(credential) {
+  const loginErr = document.getElementById('loginErr');
+  if (loginErr) loginErr.classList.remove('show');
+  const parts = String(credential || '').split('.');
+  if (parts.length < 2) throw new Error('Invalid credential');
+  const payload = b64urlJson(parts[1]);
+  if (!payload.email_verified) throw new Error('Email not verified with Google');
+  const email = String(payload.email || '').toLowerCase();
+  const role = ALLOW[email];
+  if (!role) throw new Error('This Google account is not on the allowlist');
+  await optionallyValidateAud(credential);
+  if (payload.aud && CFG.CLIENT_ID && payload.aud !== CFG.CLIENT_ID) {
+    throw new Error('Token audience mismatch');
+  }
+  const session = writeSession(email, role);
+  showApp(session);
+}
+
+function renderGoogleButton() {
+  const wrap = document.getElementById('googleBtnWrap');
+  if (!wrap || !CFG.CLIENT_ID) {
+    showLoginErr('Missing CLIENT_ID in config.js');
+    return;
+  }
+  function tryInit() {
+    if (!window.google || !google.accounts || !google.accounts.id) {
+      setTimeout(tryInit, 50);
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: CFG.CLIENT_ID,
+      callback: async (response) => {
+        try {
+          await handleCredential(response.credential);
+        } catch (ex) {
+          showLoginErr(ex.message || 'Sign-in failed');
+        }
+      },
+      auto_select: false,
+      cancel_on_tap_outside: true
+    });
+    google.accounts.id.renderButton(wrap, {
+      type: 'standard',
+      theme: 'filled_black',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      logo_alignment: 'left',
+      width: 320
+    });
+  }
+  tryInit();
+}
+
+const btnMembers = document.getElementById('btnMembers');
+const membersNote = document.getElementById('membersNote');
+if (btnMembers && membersNote) {
+  btnMembers.onclick = () => {
+    const open = membersNote.style.display === 'block';
+    membersNote.style.display = open ? 'none' : 'block';
+  };
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.members-wrap')) membersNote.style.display = 'none';
+  });
+}
+
+const btnLogout = document.getElementById('btnLogout');
+if (btnLogout) {
+  btnLogout.onclick = () => {
+    clearSession();
+    window.__ROLE__ = undefined;
+    window.__USER_EMAIL__ = undefined;
+    showLogin();
+    renderGoogleButton();
+  };
+}
+
+(function bootAuth() {
+  const existing = readSession();
+  if (existing) {
+    showApp(existing);
+  } else {
+    // Default role until sign-in (viewers cannot use overrides)
+    window.__ROLE__ = 'viewer';
+    showLogin();
+    renderGoogleButton();
+  }
+})();
+
+renderVintage();
+refreshUI();
+refreshQuotes();
+setInterval(refreshQuotes, 15000); // live share cards blink on each quote tick
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js').catch(() => {});
+}
+
+</script>
+</body>
+</html>
